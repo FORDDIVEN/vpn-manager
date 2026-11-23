@@ -1,16 +1,92 @@
 # VPN Manager
 
-Aplicación de escritorio para Linux, desarrollada incrementalmente con Python y PySide6.
+Gestor gráfico para **OpenVPN 3 y WireGuard** en Linux, desarrollado por **Luthi** con Python y PySide6. Permite organizar perfiles y gestionar sus conexiones desde una sola aplicación.
 
-**Modo actual: habilitación inicial y uso habitual sin contraseña administrativa.** La GUI sigue como usuario normal. En el primer inicio ofrece **Autorizar una vez** para instalar un componente limitado y el permiso persistente de tu cuenta. Después WireGuard puede registrar perfiles validados, conectar, detener y desconectar sin otra contraseña de root por operación.
+**Versión actual:** 0.1.9 · **Estado:** en desarrollo
 
-No se concede acceso general a comandos de root ni se modifica tu regla existente. La configuración usa un archivo propio en sudoers.d, validado con visudo y restaurado si falla. La contraseña inicial la recibe el diálogo del sistema, nunca la aplicación. También se puede habilitar desde **Configuración → Habilitar WireGuard**.
+## Funciones
 
-OpenVPN 3 mantiene sus servicios D-Bus. Las credenciales del servidor VPN son distintas de la autorización administrativa y pueden seguir solicitándose. Ver [backend y límites actuales](docs/backend.md). Las pruebas aún no han realizado una habilitación real ni abierto túneles.
+- Perfiles separados en pestañas OpenVPN y WireGuard.
+- Importación de archivos `.ovpn` y `.conf`.
+- Detección de perfiles WireGuard válidos en `/etc/wireguard/` al iniciar.
+- Importación WireGuard a `/etc/wireguard/` o uso de un archivo local sin copiarlo a esa carpeta.
+- Nombres, comentarios, favoritos y búsqueda de perfiles.
+- Estados de conexión e IP del túnel, con opción para mostrar sólo IPv4.
+- Botón **Detener** durante la conexión y **Desconectar** cuando está activa.
+- Ventana y columnas redimensionables.
+- Una instancia por usuario e integración con la bandeja del sistema.
+- Habilitación inicial de WireGuard desde la interfaz, sin editar permisos manualmente.
 
-## Ejecutar
+## Compatibilidad
 
-Python 3.12 o superior y una sesión gráfica Linux:
+El paquete `.deb` con Qt/PySide6 incluidos está dirigido a:
+
+| Sistema | Arquitectura |
+| --- | --- |
+| Linux Mint 22.x | amd64 / x86_64 |
+| Ubuntu 24.04 o posterior | amd64 / x86_64 |
+
+Se requiere una sesión gráfica, Python 3.12 o superior y glibc 2.39 o superior. Se ha probado el proyecto en Linux Mint 22.3 y en una VM con Ubuntu 26.04; esto no implica validación en todas las distribuciones o escritorios.
+
+Mint 21 y Ubuntu 22.04 no son compatibles con el paquete actual tal como vienen de fábrica.
+
+Para usar **OpenVPN**, instala **OpenVPN 3 Linux** con sus servicios D-Bus y bindings Python del sistema. El `.deb` lo declara como opcional para permitir usar únicamente WireGuard. OpenVPN 2 no sustituye este requisito.
+
+## Instalar el `.deb`
+
+Desde la carpeta donde tengas el archivo:
+
+```bash
+sudo apt install ./vpn-manager_0.1.9_amd64.deb
+```
+
+También puedes abrirlo con el instalador gráfico de tu distribución. Después, inicia **VPN Manager** desde el menú de aplicaciones o ejecuta:
+
+```bash
+vpn-manager
+```
+
+El paquete incluye Qt/PySide6 en una carpeta privada y declara las dependencias del sistema. No necesitas crear un entorno virtual para utilizarlo.
+
+### Habilitar WireGuard
+
+En la primera apertura, pulsa **Autorizar una vez** y autentícate en el diálogo del sistema. También puedes hacerlo desde **Configuración → Habilitar WireGuard**.
+
+La habilitación instala el componente limitado de WireGuard, el permiso persistente de tu cuenta y, cuando corresponde, el ajuste local de AppArmor. Después podrás gestionar WireGuard sin introducir una contraseña administrativa en cada operación. La instalación del paquete y la habilitación de la cuenta son pasos distintos.
+
+La aplicación se ejecuta como usuario normal. Las credenciales que solicite el servidor VPN, como contraseña o MFA, son independientes de esta autorización.
+
+## Uso
+
+### Añadir y organizar perfiles
+
+1. Pulsa **+** y elige **OpenVPN** o **WireGuard**.
+2. Selecciona el archivo e indica un nombre, comentario y, si quieres, márcalo como favorito.
+3. En WireGuard, elige entre copiar el archivo a `/etc/wireguard/`, seleccionar uno existente o **Usar archivo local (sin copiar)**.
+4. Usa el menú **…** del perfil para editar nombre y comentario, cambiar su favorito, consultar la ubicación o quitarlo del gestor.
+
+Los originales se conservan y la importación no sobrescribe archivos existentes. Quitar un perfil del gestor no elimina su configuración: si permanece en `/etc/wireguard/`, volverá a detectarse al iniciar.
+
+### Conectar y consultar el estado
+
+**Conectar** inicia directamente el intento de conexión. Mientras se conecta puedes pulsar **Detener**; al establecerse la conexión, el botón pasa a **Desconectar**.
+
+Los estados se consultan periódicamente. **Configuración → Actualizar estados** permite consultarlos manualmente. En ese mismo apartado puedes activar **Mostrar sólo IPv4 en la columna IP VPN**; la preferencia se conserva entre reinicios.
+
+Arrastra los separadores de los encabezados para ajustar el ancho de las columnas. La columna **IP VPN** muestra `—` cuando no se observa una dirección que cumpla el filtro seleccionado.
+
+### Bandeja y salida
+
+- Un clic en el icono oculta la ventana visible o restaura la oculta o minimizada.
+- Con bandeja disponible, la **X** oculta la ventana y la aplicación sigue en segundo plano.
+- **Salir**, desde el menú del icono, termina la aplicación. Si hay VPN activas o en proceso, pregunta si quieres desconectarlas: **Sí** desconecta y verifica antes de salir; **No** mantiene el programa abierto.
+- Si falla una desconexión o no puede comprobarse el estado, la aplicación permanece abierta.
+
+El icono depende del soporte de bandeja del escritorio. Sin ese soporte, la X cierra la aplicación; desconecta las VPN antes de cerrarla, ya que cerrar la GUI por esa vía conserva los túneles.
+
+## Ejecutar desde el código fuente
+
+Desde la raíz del repositorio, con Python 3.12 o superior:
 
 ```bash
 python3 -m venv .venv
@@ -18,56 +94,63 @@ python3 -m venv .venv
 .venv/bin/vpn-manager
 ```
 
-Ejecutar como usuario normal, sin `sudo`. PySide6 requiere las bibliotecas gráficas de Qt y del sistema; si falta alguna, revisar el mensaje del cargador antes de instalar paquetes de la distribución.
-
-La ventana (820 × 400 inicialmente, redimensionable con contenido desplazable) abre en Conexiones. El menú lateral permanece fijo y permite navegar por el resumen, conexiones, favoritos, registros y configuración. El menú de cada perfil se abre con el botón «…». Conexiones reúne el listado y detalle de todos los perfiles; Favoritos muestra únicamente los marcados con estrella. En Conexiones y Favoritos, las VPN se separan en pestañas OpenVPN y WireGuard. La búsqueda y los filtros se aplican al protocolo seleccionado y se conservan al cambiar de pestaña. Al iniciar se muestra **Conectando** y el botón **Detener**; al confirmar la conexión pasa a **Desconectar**. Detener solicita la cancelación y comprueba la desconexión antes de volver a **Conectar**. Los estados e IP se actualizan periódicamente. Configuración permite actualizar los estados manualmente. Cerrar la ventana conserva las conexiones activas. La búsqueda incluye nombres, comentarios y etiquetas; los filtros se combinan.
-
-## Verificar
-
-Las pruebas usan dobles de las herramientas VPN y no modifican la red:
+En Mint/Ubuntu, si falta el soporte para crear el entorno virtual:
 
 ```bash
-.venv/bin/python -m unittest discover -s tests -v
+sudo apt install python3-venv
 ```
 
-Para comprobar Qt sin una sesión gráfica, después de instalar las dependencias:
+Las herramientas VPN, sus servicios y las bibliotecas gráficas del sistema deben estar disponibles para las funciones que vayas a utilizar.
+
+## Construir el `.deb`
+
+Con el entorno de desarrollo preparado y `dpkg-deb` disponible:
 
 ```bash
-QT_QPA_PLATFORM=offscreen .venv/bin/python -c 'from PySide6.QtWidgets import QApplication; from vpn_manager.gui.main_window import MainWindow; app = QApplication([]); window = MainWindow(); window.show(); app.processEvents(); window.close()'
+.venv/bin/python scripts/build-deb.py
 ```
 
-Consultar [arquitectura](docs/architecture.md) y [avance](docs/progress.md).
+Se generan estos archivos en `dist/`:
 
-## Importar y editar
+```text
+vpn-manager_0.1.9_amd64.deb
+vpn-manager_0.1.9_amd64.deb.sha256
+```
 
-1. Pulsar **+** y elegir **OpenVPN** o **WireGuard** en su menú, sin cambiar de pestaña previamente. Al importar se muestra automáticamente la pestaña del protocolo elegido.
-2. En OpenVPN, elegir un `.ovpn`. En WireGuard, elegir un `.conf` local: se copia automáticamente a `/etc/wireguard/`. Los perfiles válidos de esa carpeta aparecen al iniciar, tras habilitar WireGuard. También se puede seleccionar uno desde el diálogo o elegir **Usar archivo local (sin copiar)** para guardar sólo la referencia al archivo original. Indicar nombre y comentario y, opcionalmente, marcar Favorito. Tras la habilitación inicial, WireGuard valida y copia los perfiles sin pedir otra contraseña administrativa. Los archivos existentes nunca se sobrescriben.
-3. Usar **…** para cambiar favorito, editar nombre/comentario, ver la ubicación o quitar el perfil del gestor.
+La versión procede de `pyproject.toml`. El script calcula el tamaño instalado y empaqueta PySide6 Essentials y shiboken6 desde el entorno de construcción, con versiones coincidentes. La construcción no requiere `sudo`.
 
-El comentario aparece en su propia columna junto al nombre, tanto en Conexiones como en Favoritos, y se puede buscar. La columna se puede ensanchar arrastrando su borde; el texto completo también aparece al pasar el puntero. La columna **IP VPN** está preparada para mostrar las direcciones IPv4/IPv6 asignadas al túnel en una sesión real; muestra **—** si no hay una dirección observada. OpenVPN 3 muestra el estado de su sesión; WireGuard muestra la interfaz propia activa, sin confirmar conectividad del peer. Los cambios persisten al reiniciar. Quitar un perfil requiere confirmación y conserva el archivo original.
+Para inspeccionar el resultado:
 
-La biblioteca se guarda en `$XDG_DATA_HOME/vpn-manager/profiles.sqlite3` (normalmente `~/.local/share/vpn-manager/profiles.sqlite3`) con permisos 0600. SQLite sólo almacena metadatos, ruta y huella SHA-256, sin claves ni credenciales. Las copias WireGuard se guardan por separado en `/var/lib/vpn-manager/wireguard/<uid>/<uuid>/`, privadas y gestionadas por el componente autorizado, sin sobrescribir originales. No escribir secretos en nombres o comentarios.
+```bash
+dpkg-deb --info dist/vpn-manager_0.1.9_amd64.deb
+```
 
-La importación detecta formato y duplicados; la validación privilegiada se realiza nuevamente al registrar/conectar. Los perfiles WireGuard con hooks, SaveConfig u opciones no admitidas se rechazan. Las fuentes originales se conservan. Consulta docs/backend.md para dependencias, revisiones, límites y retención de copias.
+Existe una variante ligera con `--qt system`, dirigida a sistemas que proporcionen PySide6 6.8 o superior mediante paquetes de la distribución. Consulta los detalles en la [guía de distribución](docs/distribution.md).
 
-## Probar en otro equipo o VM
+## Pruebas
 
-Consulta la [guía de instalación y prueba manual](docs/testing-vm.md). El paquete de fuentes se instala en un entorno virtual nuevo en el equipo destino.
+```bash
+QT_QPA_PLATFORM=offscreen .venv/bin/python -m unittest discover -s tests -v
+```
 
-Los perfiles WireGuard de `/etc/wireguard/` se detectan automáticamente al abrir y después de habilitar los permisos. Se conservan comentarios y favoritos y se omiten duplicados. Quitar del gestor no elimina el archivo: volverá a detectarse en el siguiente inicio. Los perfiles con formato u opciones no admitidas se omiten y se informa en Logs.
+Las pruebas utilizan herramientas VPN simuladas y archivos temporales. No abren túneles reales. La suite también comprueba sockets locales de instancia única y validaciones con `visudo` y `apparmor_parser`; estas herramientas deben estar disponibles.
 
-## Instalador .deb experimental
+## Datos y límites actuales
 
-La versión 0.1.9 amd64 incluye Qt/PySide6 para Mint 22.x y Ubuntu 24.04 o posterior; instala desde el gestor de software y abre VPN Manager desde el menú. La primera habilitación gestiona también el ajuste local de AppArmor, con validación y restauración ante fallos. No requiere editar permisos manualmente. Ver [distribución, actualización y límites](docs/distribution.md). Construir con `.venv/bin/python scripts/build-deb.py`.
+Los metadatos se guardan en `~/.local/share/vpn-manager/profiles.sqlite3`, o en la ubicación equivalente de `$XDG_DATA_HOME`. SQLite almacena nombres, comentarios, rutas y huellas de los archivos, sin claves privadas ni credenciales VPN.
 
-## Instancia única y bandeja
+WireGuard utiliza copias operativas privadas en `/var/lib/vpn-manager/wireguard/`. Se rechazan configuraciones con hooks, `SaveConfig` u opciones no admitidas. Una interfaz WireGuard activa no garantiza que el servidor responda o que exista un handshake reciente.
 
-Sólo se abre una instancia por usuario. Un segundo lanzamiento muestra la ventana existente, también si estaba oculta. Si el escritorio ofrece bandeja del sistema, cerrar con la X oculta la ventana y mantiene la aplicación abierta. El menú del icono permite mostrarla o **Salir**. Si hay VPN activas o conectándose, pide confirmación: Sí cancela/desconecta y sólo sale tras verificar; No conserva el programa abierto. Un fallo o estado desconocido impide salir. Sin bandeja disponible, cerrar la ventana termina la aplicación como antes.
+La aplicación gestiona sus propias conexiones: no adopta automáticamente túneles externos iniciados desde terminal. El soporte OpenVPN para autenticación web/SSO y PKCS#11 está pendiente. Consulta el [backend y sus límites](docs/backend.md) para conocer el comportamiento de permisos, DNS, validación y conservación de copias.
 
-En **Configuración → Mostrar sólo IPv4 en la columna IP VPN** se puede ocultar IPv6 de la tabla y su texto emergente. La preferencia se conserva al reiniciar y no modifica la configuración de red. Sin IPv4 observada se muestra —.
+## Documentación
 
-Todas las columnas visibles se pueden redimensionar arrastrando los separadores de sus encabezados, incluidas Perfil, Estado, Acción y ⋯. La actualización de estados conserva los anchos durante la sesión.
+- [Instalación, empaquetado y actualización](docs/distribution.md)
+- [Pruebas en otro equipo o VM](docs/testing-vm.md)
+- [Backend y permisos](docs/backend.md)
+- [Arquitectura](docs/architecture.md)
+- [Historial de desarrollo](docs/progress.md)
 
-Un clic en el icono de bandeja alterna entre ocultar la ventana visible y mostrarla si estaba oculta o minimizada. Si hay un diálogo abierto, se muestra para que puedas responder. El menú Mostrar VPN Manager siempre muestra la ventana.
+## Autor
 
-El botón Conectar inicia el intento directamente, sin confirmación adicional de rutas/DNS. Las credenciales que solicite la VPN y la autorización inicial de WireGuard siguen su flujo habitual.
+**Luthi**
