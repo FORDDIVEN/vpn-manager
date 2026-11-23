@@ -1,0 +1,16 @@
+README.md
+pyproject.toml
+src/vpn_manager/__init__.py
+src/vpn_manager/main.py
+src/vpn_manager.egg-info/PKG-INFO
+src/vpn_manager.egg-info/SOURCES.txt
+src/vpn_manager.egg-info/dependency_links.txt
+src/vpn_manager.egg-info/entry_points.txt
+src/vpn_manager.egg-info/requires.txt
+src/vpn_manager.egg-info/top_level.txt
+src/vpn_manager/core/__init__.py
+src/vpn_manager/core/demo.py
+src/vpn_manager/core/models.py
+src/vpn_manager/gui/__init__.py
+src/vpn_manager/gui/main_window.py
+tests/test_demo.py
